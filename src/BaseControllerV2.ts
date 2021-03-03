@@ -4,7 +4,7 @@ import { enablePatches, produceWithPatches } from 'immer';
 // eslint-disable-next-line no-duplicate-imports
 import type { Draft, Patch } from 'immer';
 
-import type { ControllerMessenger } from './ControllerMessenger';
+import type { RestrictedControllerMessenger, Namespaced } from './ControllerMessenger';
 
 enablePatches();
 
@@ -101,7 +101,13 @@ type Json = null | boolean | number | string | Json[] | { [prop: string]: Json }
 export class BaseController<N extends string, S extends Record<string, unknown>> {
   private internalState: IsJsonable<S>;
 
-  private messagingSystem: ControllerMessenger<never, { type: `${N}:stateChange`; payload: [S, Patch[]] }>;
+  private messagingSystem: RestrictedControllerMessenger<
+    N,
+    never,
+    { type: `${N}:stateChange`; payload: [S, Patch[]] },
+    any,
+    any
+  >;
 
   private name: N;
 
@@ -116,7 +122,13 @@ export class BaseController<N extends string, S extends Record<string, unknown>>
    *   and which parts should be persisted.
    */
   constructor(
-    messagingSystem: ControllerMessenger<never, { type: `${N}:stateChange`; payload: [S, Patch[]] }>,
+    messagingSystem: RestrictedControllerMessenger<
+      N,
+      never,
+      { type: `${N}:stateChange`; payload: [S, Patch[]] },
+      any,
+      any
+    >,
     name: N,
     state: IsJsonable<S>,
     metadata: StateMetadata<S>,
@@ -152,7 +164,7 @@ export class BaseController<N extends string, S extends Record<string, unknown>>
   protected update(callback: (state: Draft<IsJsonable<S>>) => void | IsJsonable<S>) {
     const [nextState, patches] = produceWithPatches(this.internalState, callback);
     this.internalState = nextState as IsJsonable<S>;
-    this.messagingSystem.publish(`${this.name}:stateChange` as `${N}:stateChange`, nextState as S, patches);
+    this.messagingSystem.publish(`${this.name}:stateChange` as Namespaced<N, any>, nextState as S, patches);
   }
 
   /**
@@ -165,7 +177,7 @@ export class BaseController<N extends string, S extends Record<string, unknown>>
    * listeners from being garbage collected.
    */
   protected destroy() {
-    this.messagingSystem.clearEventSubscriptions(`${this.name}:stateChange` as `${N}:stateChange`);
+    this.messagingSystem.clearEventSubscriptions(`${this.name}:stateChange` as Namespaced<N, any>);
   }
 }
 

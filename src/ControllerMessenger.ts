@@ -14,6 +14,95 @@ type ExtractEventPayload<Event, T> = Event extends { type: T; payload: infer P }
 type ActionConstraint = { type: string; handler: (...args: any) => unknown };
 type EventConstraint = { type: string; payload: unknown[] };
 
+export type Namespaced<Name extends string, T> = T extends `${Name}:${string}` ? T : never;
+
+export class RestrictedControllerMessenger<
+  N extends string,
+  Action extends ActionConstraint,
+  Event extends EventConstraint,
+  AllowedAction extends string,
+  AllowedEvent extends string
+> {
+  private controllerMessenger: ControllerMessenger<Action, Event>;
+
+  private controllerName: N;
+
+  private allowedActions: AllowedAction[];
+
+  private allowedEvents: AllowedEvent[];
+
+  constructor(
+    controllerMessenger: ControllerMessenger<Action, Event>,
+    controllerName: N,
+    allowedActions: AllowedAction[],
+    allowedEvents: AllowedEvent[],
+  ) {
+    this.controllerMessenger = controllerMessenger;
+    this.controllerName = controllerName;
+    this.allowedActions = allowedActions;
+    this.allowedEvents = allowedEvents;
+  }
+
+  registerActionHandler<T extends Namespaced<N, Action['type']>>(action: T, handler: ActionHandler<Action, T>) {
+    /* istanbul ignore if */
+    if (!action.startsWith(`${this.controllerName}:`)) {
+      throw new Error(`Only allowed registering action handlers prefixed by '${this.controllerName}:'`);
+    }
+    return this.controllerMessenger.registerActionHandler(action, handler);
+  }
+
+  unregisterActionHandler<T extends Namespaced<N, Action['type']>>(action: T) {
+    /* istanbul ignore if */
+    if (!action.startsWith(`${this.controllerName}:`)) {
+      throw new Error(`Only allowed unregistering action handlers prefixed by '${this.controllerName}:'`);
+    }
+    return this.controllerMessenger.unregisterActionHandler(action);
+  }
+
+  call<T extends AllowedAction>(
+    action: T,
+    ...params: ExtractActionParameters<Action, T>
+  ): ExtractActionResponse<Action, T> {
+    /* istanbul ignore if */
+    if (!this.allowedActions.includes(action)) {
+      throw new Error(`Action missing from allow list: ${action}`);
+    }
+    return this.controllerMessenger.call(action, ...params);
+  }
+
+  publish<E extends Namespaced<N, Event['type']>>(event: E, ...payload: ExtractEventPayload<Event, E>) {
+    /* istanbul ignore if */
+    if (!event.startsWith(`${this.controllerName}:`)) {
+      throw new Error(`Only allowed publishing events prefixed by '${this.controllerName}:'`);
+    }
+    return this.controllerMessenger.publish(event, ...payload);
+  }
+
+  subscribe<E extends AllowedEvent>(event: E, handler: ExtractEvenHandler<Event, E>) {
+    /* istanbul ignore if */
+    if (!this.allowedEvents.includes(event)) {
+      throw new Error(`Event missing from allow list: ${event}`);
+    }
+    return this.controllerMessenger.subscribe(event, handler);
+  }
+
+  unsubscribe<E extends AllowedEvent>(event: E, handler: ExtractEvenHandler<Event, E>) {
+    /* istanbul ignore if */
+    if (!this.allowedEvents.includes(event)) {
+      throw new Error(`Event missing from allow list: ${event}`);
+    }
+    return this.controllerMessenger.unsubscribe(event, handler);
+  }
+
+  clearEventSubscriptions<E extends Namespaced<N, Event['type']>>(event: E) {
+    /* istanbul ignore if */
+    if (!event.startsWith(`${this.controllerName}:`)) {
+      throw new Error(`Only allowed clearing events prefixed by '${this.controllerName}:'`);
+    }
+    return this.controllerMessenger.clearEventSubscriptions(event);
+  }
+}
+
 /**
  * A messaging system for controllers.
  *
@@ -160,5 +249,18 @@ export class ControllerMessenger<Action extends ActionConstraint, Event extends 
    */
   clearSubscriptions() {
     this.events.clear();
+  }
+
+  getRestricted<N extends string, AllowedAction extends string, AllowedEvent extends string>(
+    name: N,
+    allowedActions: Extract<Action['type'], AllowedAction>[] | [],
+    allowedEvents: Extract<Event['type'], AllowedEvent>[] | [],
+  ) {
+    return new RestrictedControllerMessenger<N, Action, Event, AllowedAction, AllowedEvent>(
+      this,
+      name,
+      allowedActions,
+      allowedEvents,
+    );
   }
 }
