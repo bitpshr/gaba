@@ -251,11 +251,15 @@ export class ControllerMessenger<Action extends ActionConstraint, Event extends 
     this.events.clear();
   }
 
-  getRestricted<N extends string, AllowedAction extends string, AllowedEvent extends string>(
-    name: N,
-    allowedActions: Extract<Action['type'], AllowedAction>[] | [],
-    allowedEvents: Extract<Event['type'], AllowedEvent>[] | [],
-  ) {
+  getRestricted<N extends string, AllowedAction extends string, AllowedEvent extends string>({
+    name,
+    allowedActions,
+    allowedEvents,
+  }: {
+    name: N;
+    allowedActions: Extract<Action['type'], AllowedAction>[] | [];
+    allowedEvents: Extract<Event['type'], AllowedEvent>[] | [];
+  }) {
     return new RestrictedControllerMessenger<N, Action, Event, AllowedAction, AllowedEvent>(
       this,
       name,

@@ -290,11 +290,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow registering and calling an action handler', () => {
     type CountAction = { type: 'CountController:count'; handler: (increment: number) => void };
     const controllerMessenger = new ControllerMessenger<CountAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'CountController',
-      ['CountController:count'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'CountController',
+      allowedActions: ['CountController:count'],
+      allowedEvents: [],
+    });
 
     let count = 0;
     restrictedControllerMessenger.registerActionHandler('CountController:count', (increment: number) => {
@@ -310,11 +310,11 @@ describe('RestrictedControllerMessenger', () => {
       | { type: 'MessageController:concat'; handler: (message: string) => void }
       | { type: 'MessageController:reset'; handler: (initialMessage: string) => void };
     const controllerMessenger = new ControllerMessenger<MessageAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      ['MessageController:reset', 'MessageController:concat'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: ['MessageController:reset', 'MessageController:concat'],
+      allowedEvents: [],
+    });
 
     let message = '';
     restrictedControllerMessenger.registerActionHandler('MessageController:reset', (initialMessage: string) => {
@@ -333,11 +333,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow registering and calling an action handler with no parameters', () => {
     type IncrementAction = { type: 'CountController:increment'; handler: () => void };
     const controllerMessenger = new ControllerMessenger<IncrementAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'CountController',
-      ['CountController:increment'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'CountController',
+      allowedActions: ['CountController:increment'],
+      allowedEvents: [],
+    });
 
     let count = 0;
     restrictedControllerMessenger.registerActionHandler('CountController:increment', () => {
@@ -351,11 +351,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow registering and calling an action handler with multiple parameters', () => {
     type MessageAction = { type: 'MessageController:message'; handler: (to: string, message: string) => void };
     const controllerMessenger = new ControllerMessenger<MessageAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      ['MessageController:message'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: ['MessageController:message'],
+      allowedEvents: [],
+    });
 
     const messages: Record<string, string> = {};
     restrictedControllerMessenger.registerActionHandler('MessageController:message', (to, message) => {
@@ -369,11 +369,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow registering and calling an action handler with a return value', () => {
     type AddAction = { type: 'MathController:add'; handler: (a: number, b: number) => number };
     const controllerMessenger = new ControllerMessenger<AddAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MathController',
-      ['MathController:add'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MathController',
+      allowedActions: ['MathController:add'],
+      allowedEvents: [],
+    });
 
     restrictedControllerMessenger.registerActionHandler('MathController:add', (a, b) => {
       return a + b;
@@ -386,11 +386,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should not allow registering multiple action handlers under the same name', () => {
     type CountAction = { type: 'PingController:ping'; handler: () => void };
     const controllerMessenger = new ControllerMessenger<CountAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'PingController',
-      ['PingController:ping'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'PingController',
+      allowedActions: ['PingController:ping'],
+      allowedEvents: [],
+    });
 
     restrictedControllerMessenger.registerActionHandler('PingController:ping', () => undefined);
 
@@ -402,11 +402,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should throw when calling unregistered action', () => {
     type CountAction = { type: 'PingController:ping'; handler: () => void };
     const controllerMessenger = new ControllerMessenger<CountAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'PingController',
-      ['PingController:ping'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'PingController',
+      allowedActions: ['PingController:ping'],
+      allowedEvents: [],
+    });
 
     expect(() => {
       restrictedControllerMessenger.call('PingController:ping');
@@ -416,11 +416,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should throw when calling an action that has been unregistered', () => {
     type PingAction = { type: 'PingController:ping'; handler: () => void };
     const controllerMessenger = new ControllerMessenger<PingAction, never>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'PingController',
-      ['PingController:ping'],
-      [],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'PingController',
+      allowedActions: ['PingController:ping'],
+      allowedEvents: [],
+    });
 
     expect(() => {
       restrictedControllerMessenger.call('PingController:ping');
@@ -442,11 +442,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should publish event to subscriber', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
@@ -461,11 +461,11 @@ describe('RestrictedControllerMessenger', () => {
       | { type: 'MessageController:message'; payload: [string] }
       | { type: 'MessageController:ping'; payload: [] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message', 'MessageController:ping'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message', 'MessageController:ping'],
+    });
 
     const messageHandler = sinon.stub();
     const pingHandler = sinon.stub();
@@ -484,11 +484,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should publish event with no payload to subscriber', () => {
     type PingEvent = { type: 'PingController:ping'; payload: [] };
     const controllerMessenger = new ControllerMessenger<never, PingEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'PingController',
-      [],
-      ['PingController:ping'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'PingController',
+      allowedActions: [],
+      allowedEvents: ['PingController:ping'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('PingController:ping', handler);
@@ -501,11 +501,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should publish event with multiple payload parameters to subscriber', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string, string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
@@ -518,11 +518,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should publish event once to subscriber even if subscribed multiple times', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
@@ -536,11 +536,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should publish event to many subscribers', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler1 = sinon.stub();
     const handler2 = sinon.stub();
@@ -557,11 +557,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should not call subscriber after unsubscribing', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
@@ -574,11 +574,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should throw when unsubscribing when there are no subscriptions', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     expect(() => restrictedControllerMessenger.unsubscribe('MessageController:message', handler)).toThrow();
@@ -587,11 +587,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should throw when unsubscribing a handler that is not subscribed', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler1 = sinon.stub();
     const handler2 = sinon.stub();
@@ -603,11 +603,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should not call subscriber after clearing event subscriptions', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
@@ -620,11 +620,11 @@ describe('RestrictedControllerMessenger', () => {
   it('should not throw when clearing event that has no subscriptions', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'MessageController',
-      [],
-      ['MessageController:message'],
-    );
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     expect(() => restrictedControllerMessenger.clearEventSubscriptions('MessageController:message')).not.toThrow();
   });
@@ -632,12 +632,16 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow calling an external action', () => {
     type CountAction = { type: 'CountController:count'; handler: (increment: number) => void };
     const controllerMessenger = new ControllerMessenger<CountAction, never>();
-    const externalRestrictedControllerMessenger = controllerMessenger.getRestricted('CountController', [], []);
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'OtherController',
-      ['CountController:count'],
-      [],
-    );
+    const externalRestrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'CountController',
+      allowedActions: [],
+      allowedEvents: [],
+    });
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'OtherController',
+      allowedActions: ['CountController:count'],
+      allowedEvents: [],
+    });
 
     let count = 0;
     externalRestrictedControllerMessenger.registerActionHandler('CountController:count', (increment: number) => {
@@ -651,12 +655,16 @@ describe('RestrictedControllerMessenger', () => {
   it('should allow subscribing to an external event', () => {
     type MessageEvent = { type: 'MessageController:message'; payload: [string] };
     const controllerMessenger = new ControllerMessenger<never, MessageEvent>();
-    const externalRestrictedControllerMessenger = controllerMessenger.getRestricted('MessageController', [], []);
-    const restrictedControllerMessenger = controllerMessenger.getRestricted(
-      'OtherController',
-      [],
-      ['MessageController:message'],
-    );
+    const externalRestrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'MessageController',
+      allowedActions: [],
+      allowedEvents: [],
+    });
+    const restrictedControllerMessenger = controllerMessenger.getRestricted({
+      name: 'OtherController',
+      allowedActions: [],
+      allowedEvents: ['MessageController:message'],
+    });
 
     const handler = sinon.stub();
     restrictedControllerMessenger.subscribe('MessageController:message', handler);
