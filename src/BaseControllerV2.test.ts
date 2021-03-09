@@ -593,8 +593,8 @@ describe('getPersistentState', () => {
           'VisitorController',
           VisitorControllerAction | VisitorOverflowControllerAction,
           VisitorControllerEvent | VisitorOverflowControllerEvent,
-          string,
-          string
+          never,
+          never
         >,
       ) {
         super(messagingSystem, 'VisitorController', { visitors: [] }, visitorControllerStateMetadata);
@@ -646,8 +646,8 @@ describe('getPersistentState', () => {
           'VisitorOverflowController',
           VisitorControllerAction | VisitorOverflowControllerAction,
           VisitorControllerEvent | VisitorOverflowControllerEvent,
-          string,
-          string
+          'VisitorController:clear',
+          'VisitorController:stateChange'
         >,
       ) {
         super(messagingSystem, 'VisitorOverflowController', { maxVisitors: 5 }, visitorOverflowControllerMetadata);
