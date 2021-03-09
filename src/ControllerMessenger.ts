@@ -14,6 +14,11 @@ type ExtractEventPayload<Event, T> = Event extends { type: T; payload: infer P }
 type ActionConstraint = { type: string; handler: (...args: any) => unknown };
 type EventConstraint = { type: string; payload: unknown[] };
 
+/**
+ * A namespaced string
+ *
+ * This type verifies that the string T is prefixed by the string Name followed by a colon.
+ */
 export type Namespaced<Name extends string, T> = T extends `${Name}:${string}` ? T : never;
 
 /**
