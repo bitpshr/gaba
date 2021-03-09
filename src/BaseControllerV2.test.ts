@@ -2,7 +2,7 @@ import type { Draft, Patch } from 'immer';
 import * as sinon from 'sinon';
 
 import { BaseController, getAnonymizedState, getPersistentState } from './BaseControllerV2';
-import { ControllerMessenger } from './ControllerMessenger';
+import { ControllerMessenger, RestrictedControllerMessenger } from './ControllerMessenger';
 
 type CountControllerState = {
   count: number;
@@ -563,5 +563,140 @@ describe('getPersistentState', () => {
     );
 
     expect(persistentState).toEqual({ count: 1 });
+  });
+
+  describe('inter-controller communication', () => {
+    // These two contrived mock controllers are setup to test with.
+    // The 'VisitorController' records strings that represent visitors.
+    // The 'VisitorOverflowController' monitors the 'VisitorController' to ensure the number of
+    // visitors doesn't exceed the maximum capacity. If it does, it will clear out all visitors.
+    type VisitorControllerState = {
+      visitors: string[];
+    };
+    type VisitorControllerAction = {
+      type: `VisitorController:clear`;
+      handler: () => void;
+    };
+    type VisitorControllerEvent = {
+      type: `VisitorController:stateChange`;
+      payload: [VisitorControllerState, Patch[]];
+    };
+    const visitorControllerStateMetadata = {
+      visitors: {
+        persist: true,
+        anonymous: true,
+      },
+    };
+    class VisitorController extends BaseController<'VisitorController', VisitorControllerState> {
+      constructor(
+        messagingSystem: RestrictedControllerMessenger<
+          'VisitorController',
+          VisitorControllerAction | VisitorOverflowControllerAction,
+          VisitorControllerEvent | VisitorOverflowControllerEvent,
+          string,
+          string
+        >,
+      ) {
+        super(messagingSystem, 'VisitorController', { visitors: [] }, visitorControllerStateMetadata);
+        messagingSystem.registerActionHandler('VisitorController:clear', this.clear);
+      }
+
+      clear = () => {
+        this.update(() => {
+          return { visitors: [] };
+        });
+      };
+
+      addVisitor(visitor: string) {
+        this.update(({ visitors }) => {
+          return { visitors: [...visitors, visitor] };
+        });
+      }
+
+      destroy() {
+        super.destroy();
+      }
+    }
+
+    type VisitorOverflowControllerState = {
+      maxVisitors: number;
+    };
+    type VisitorOverflowControllerAction = {
+      type: `VisitorOverflowController:updateMax`;
+      handler: (max: number) => void;
+    };
+    type VisitorOverflowControllerEvent = {
+      type: `VisitorOverflowController:stateChange`;
+      payload: [VisitorOverflowControllerState, Patch[]];
+    };
+
+    const visitorOverflowControllerMetadata = {
+      maxVisitors: {
+        persist: false,
+        anonymous: true,
+      },
+    };
+
+    class VisitorOverflowController extends BaseController<
+      'VisitorOverflowController',
+      VisitorOverflowControllerState
+    > {
+      constructor(
+        messagingSystem: RestrictedControllerMessenger<
+          'VisitorOverflowController',
+          VisitorControllerAction | VisitorOverflowControllerAction,
+          VisitorControllerEvent | VisitorOverflowControllerEvent,
+          string,
+          string
+        >,
+      ) {
+        super(messagingSystem, 'VisitorOverflowController', { maxVisitors: 5 }, visitorOverflowControllerMetadata);
+        messagingSystem.registerActionHandler('VisitorOverflowController:updateMax', this.updateMax);
+        messagingSystem.subscribe('VisitorController:stateChange', this.onVisit);
+      }
+
+      onVisit = ({ visitors }: VisitorControllerState) => {
+        if (visitors.length > this.state.maxVisitors) {
+          this.messagingSystem.call('VisitorController:clear');
+        }
+      };
+
+      updateMax = (max: number) => {
+        this.update(() => {
+          return { maxVisitors: max };
+        });
+      };
+
+      destroy() {
+        super.destroy();
+      }
+    }
+
+    it('should allow messaging between controllers', () => {
+      const controllerMessenger = new ControllerMessenger<
+        VisitorControllerAction | VisitorOverflowControllerAction,
+        VisitorControllerEvent | VisitorOverflowControllerEvent
+      >();
+      const visitorControllerMessenger = controllerMessenger.getRestricted({
+        name: 'VisitorController',
+        allowedActions: [],
+        allowedEvents: [],
+      });
+      const visitorController = new VisitorController(visitorControllerMessenger);
+      const visitorOverflowControllerMessenger = controllerMessenger.getRestricted({
+        name: 'VisitorOverflowController',
+        allowedActions: ['VisitorController:clear'],
+        allowedEvents: ['VisitorController:stateChange'],
+      });
+      const visitorOverflowController = new VisitorOverflowController(visitorOverflowControllerMessenger);
+
+      controllerMessenger.call('VisitorOverflowController:updateMax', 2);
+      visitorController.addVisitor('A');
+      visitorController.addVisitor('B');
+      visitorController.addVisitor('C'); // this should trigger an overflow
+
+      expect(visitorOverflowController.state.maxVisitors).toEqual(2);
+      expect(visitorController.state.visitors).toHaveLength(0);
+    });
   });
 });
