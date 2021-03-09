@@ -13,14 +13,14 @@ type CountControllerEvent = {
   payload: [CountControllerState, Patch[]];
 };
 
-const CountControllerStateMetadata = {
+const countControllerStateMetadata = {
   count: {
     persist: true,
     anonymous: true,
   },
 };
 
-class MockController extends BaseController<'CountController', CountControllerState> {
+class CountController extends BaseController<'CountController', CountControllerState> {
   update(callback: (state: Draft<CountControllerState>) => void | CountControllerState) {
     super.update(callback);
   }
@@ -38,11 +38,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
     expect(controller.state).toEqual({ count: 0 });
@@ -55,14 +55,14 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
-    expect(controller.metadata).toEqual(CountControllerStateMetadata);
+    expect(controller.metadata).toEqual(countControllerStateMetadata);
   });
 
   it('should not allow mutating state directly', () => {
@@ -72,11 +72,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
     expect(() => {
@@ -91,11 +91,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
     controller.update((draft) => {
@@ -112,11 +112,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
     controller.update(() => {
@@ -133,11 +133,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
 
     expect(() => {
@@ -155,11 +155,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
     const listener1 = sinon.stub();
     const listener2 = sinon.stub();
@@ -183,11 +183,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
     const listener1 = sinon.stub();
 
@@ -209,11 +209,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
     const listener1 = sinon.stub();
 
@@ -233,11 +233,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
     const listener1 = sinon.stub();
 
@@ -258,7 +258,7 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    new MockController(restrictedControllerMessenger, 'CountController', { count: 0 }, CountControllerStateMetadata);
+    new CountController(restrictedControllerMessenger, 'CountController', { count: 0 }, countControllerStateMetadata);
     const listener1 = sinon.stub();
 
     expect(() => {
@@ -273,11 +273,11 @@ describe('BaseController', () => {
       allowedActions: [],
       allowedEvents: ['CountController:stateChange'],
     });
-    const controller = new MockController(
+    const controller = new CountController(
       restrictedControllerMessenger,
       'CountController',
       { count: 0 },
-      CountControllerStateMetadata,
+      countControllerStateMetadata,
     );
     const listener1 = sinon.stub();
     const listener2 = sinon.stub();
