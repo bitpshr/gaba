@@ -31,14 +31,19 @@ export class RestrictedControllerMessenger<
 
   private allowedEvents: AllowedEvent[];
 
-  constructor(
-    controllerMessenger: ControllerMessenger<Action, Event>,
-    controllerName: N,
-    allowedActions: AllowedAction[],
-    allowedEvents: AllowedEvent[],
-  ) {
+  constructor({
+    controllerMessenger,
+    name,
+    allowedActions,
+    allowedEvents,
+  }: {
+    controllerMessenger: ControllerMessenger<Action, Event>;
+    name: N;
+    allowedActions: AllowedAction[];
+    allowedEvents: AllowedEvent[];
+  }) {
     this.controllerMessenger = controllerMessenger;
-    this.controllerName = controllerName;
+    this.controllerName = name;
     this.allowedActions = allowedActions;
     this.allowedEvents = allowedEvents;
   }
@@ -260,11 +265,11 @@ export class ControllerMessenger<Action extends ActionConstraint, Event extends 
     allowedActions: Extract<Action['type'], AllowedAction>[] | [];
     allowedEvents: Extract<Event['type'], AllowedEvent>[] | [];
   }) {
-    return new RestrictedControllerMessenger<N, Action, Event, AllowedAction, AllowedEvent>(
-      this,
+    return new RestrictedControllerMessenger<N, Action, Event, AllowedAction, AllowedEvent>({
+      controllerMessenger: this,
       name,
       allowedActions,
       allowedEvents,
-    );
+    });
   }
 }
