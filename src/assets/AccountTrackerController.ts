@@ -1,6 +1,7 @@
 import BaseController, { BaseConfig, BaseState } from '../BaseController';
-import PreferencesController from '../user/PreferencesController';
+import { PreferencesState } from '../user/PreferencesController';
 import { BNToHex, query, safelyExecuteWithTimeout } from '../util';
+import type { ContactEntry } from '../user/AddressBookController';
 
 const EthQuery = require('eth-query');
 const { Mutex } = require('async-mutex');
@@ -50,11 +51,8 @@ export class AccountTrackerController extends BaseController<AccountTrackerConfi
   private handle?: NodeJS.Timer;
 
   private syncAccounts() {
-    const {
-      state: { identities },
-    } = this.context.PreferencesController as PreferencesController;
     const { accounts } = this.state;
-    const addresses = Object.keys(identities);
+    const addresses = Object.keys(this.identities);
     const existing = Object.keys(accounts);
     const newAddresses = addresses.filter((address) => existing.indexOf(address) === -1);
     const oldAddresses = existing.filter((address) => addresses.indexOf(address) === -1);
@@ -72,10 +70,7 @@ export class AccountTrackerController extends BaseController<AccountTrackerConfi
    */
   name = 'AccountTrackerController';
 
-  /**
-   * List of required sibling controllers this controller needs to function
-   */
-  requiredControllers = ['PreferencesController'];
+  private identities: { [address: string]: ContactEntry };
 
   /**
    * Creates an AccountTracker instance
@@ -83,13 +78,24 @@ export class AccountTrackerController extends BaseController<AccountTrackerConfi
    * @param config - Initial options used to configure this controller
    * @param state - Initial state to set on this controller
    */
-  constructor(config?: Partial<AccountTrackerConfig>, state?: Partial<AccountTrackerState>) {
+  constructor(
+    onPreferencesStateChange: (listener: (preferencesState: PreferencesState) => void) => void,
+    initialIdentities: { [address: string]: ContactEntry },
+    config?: Partial<AccountTrackerConfig>,
+    state?: Partial<AccountTrackerState>,
+  ) {
     super(config, state);
     this.defaultConfig = {
       interval: 10000,
     };
     this.defaultState = { accounts: {} };
     this.initialize();
+    this.identities = initialIdentities;
+    onPreferencesStateChange(({ identities }) => {
+      this.identities = identities;
+      this.refresh();
+    });
+    this.poll();
   }
 
   /**
@@ -99,17 +105,6 @@ export class AccountTrackerController extends BaseController<AccountTrackerConfi
    */
   set provider(provider: any) {
     this.ethQuery = new EthQuery(provider);
-  }
-
-  /**
-   * Extension point called if and when this controller is composed
-   * with other controllers using a ComposableController
-   */
-  onComposed() {
-    super.onComposed();
-    const preferences = this.context.PreferencesController as PreferencesController;
-    preferences.subscribe(this.refresh);
-    this.poll();
   }
 
   /**

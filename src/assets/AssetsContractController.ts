@@ -161,6 +161,11 @@ export class AssetsContractController extends BaseController<AssetsContractConfi
    * @returns - Promise resolving to the 'tokenURI'
    */
   async getCollectibleTokenURI(address: string, tokenId: number): Promise<string> {
+    const supportsMetadata = await this.contractSupportsMetadataInterface(address);
+    /* istanbul ignore if */
+    if (!supportsMetadata) {
+      return '';
+    }
     const contract = this.web3.eth.contract(abiERC721).at(address);
     return new Promise<string>((resolve, reject) => {
       contract.tokenURI(tokenId, (error: Error, result: string) => {

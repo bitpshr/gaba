@@ -101,67 +101,6 @@ describe('ComposableController', () => {
     });
   });
 
-  it('should expose sibling context', () => {
-    const controller = new ComposableController([
-      new AddressBookController(),
-      new AssetsController(),
-      new AssetsContractController(),
-      new CurrencyRateController(),
-      new EnsController(),
-      new NetworkController(),
-      new PreferencesController(),
-      new TokenRatesController(),
-    ]);
-    const addressContext = controller.context.TokenRatesController.context
-      .AddressBookController as AddressBookController;
-    expect(addressContext).toBeDefined();
-    addressContext.set('0x32Be343B94f860124dC4fEe278FDCBD38C102D88', 'foo');
-    expect(controller.flatState).toEqual({
-      addressBook: {
-        1: {
-          '0x32Be343B94f860124dC4fEe278FDCBD38C102D88': {
-            address: '0x32Be343B94f860124dC4fEe278FDCBD38C102D88',
-            chainId: '1',
-            isEns: false,
-            memo: '',
-            name: 'foo',
-          },
-        },
-      },
-      allCollectibleContracts: {},
-      allCollectibles: {},
-      allTokens: {},
-      collectibleContracts: [],
-      collectibles: [],
-      contractExchangeRates: {},
-      conversionDate: 0,
-      conversionRate: 0,
-      currentCurrency: 'usd',
-      ensEntries: {},
-      featureFlags: {},
-      frequentRpcList: [],
-      identities: {},
-      ignoredCollectibles: [],
-      ignoredTokens: [],
-      ipfsGateway: 'https://ipfs.io/ipfs/',
-      lostIdentities: {},
-      nativeCurrency: 'ETH',
-      network: 'loading',
-      provider: { type: 'mainnet', chainId: NetworksChainId.mainnet },
-      selectedAddress: '',
-      suggestedAssets: [],
-      tokens: [],
-      usdConversionRate: 0,
-    });
-  });
-
-  it('should get and set new stores', () => {
-    const controller = new ComposableController();
-    const addressBook = new AddressBookController();
-    controller.controllers = [addressBook];
-    expect(controller.controllers).toEqual([addressBook]);
-  });
-
   it('should set initial state', () => {
     const state = {
       AddressBookController: {

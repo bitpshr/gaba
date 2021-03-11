@@ -101,10 +101,13 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    */
   name = 'KeyringController';
 
-  /**
-   * List of required sibling controllers this controller needs to function
-   */
-  requiredControllers = ['PreferencesController'];
+  private removeIdentity: PreferencesController['removeIdentity'];
+
+  private syncIdentities: PreferencesController['syncIdentities'];
+
+  private updateIdentities: PreferencesController['updateIdentities'];
+
+  private updateSelectedAddress: PreferencesController['updateSelectedAddress'];
 
   /**
    * Creates a KeyringController instance
@@ -112,13 +115,24 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @param config - Initial options used to configure this controller
    * @param state - Initial state to set on this controller
    */
-  constructor(config?: Partial<KeyringConfig>, state?: Partial<KeyringState>) {
+  constructor(
+    removeIdentity: PreferencesController['removeIdentity'],
+    syncIdentities: PreferencesController['syncIdentities'],
+    updateIdentities: PreferencesController['updateIdentities'],
+    updateSelectedAddress: PreferencesController['updateSelectedAddress'],
+    config?: Partial<KeyringConfig>,
+    state?: Partial<KeyringState>,
+  ) {
     super(config, state);
     privates.set(this, { keyring: new Keyring(Object.assign({ initState: state }, config)) });
     this.defaultState = {
       ...privates.get(this).keyring.store.getState(),
       keyrings: [],
     };
+    this.removeIdentity = removeIdentity;
+    this.syncIdentities = syncIdentities;
+    this.updateIdentities = updateIdentities;
+    this.updateSelectedAddress = updateSelectedAddress;
     this.initialize();
     this.fullUpdate();
   }
@@ -129,7 +143,6 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @returns - Promise resolving to current state when the account is added
    */
   async addNewAccount(): Promise<KeyringMemState> {
-    const preferences = this.context.PreferencesController as PreferencesController;
     const primaryKeyring = privates.get(this).keyring.getKeyringsByType('HD Key Tree')[0];
     /* istanbul ignore if */
     if (!primaryKeyring) {
@@ -141,10 +154,10 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
 
     await this.verifySeedPhrase();
 
-    preferences.updateIdentities(newAccounts);
+    this.updateIdentities(newAccounts);
     newAccounts.forEach((selectedAddress: string) => {
       if (!oldAccounts.includes(selectedAddress)) {
-        preferences.update({ selectedAddress });
+        this.updateSelectedAddress(selectedAddress);
       }
     });
     return this.fullUpdate();
@@ -175,13 +188,11 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @returns - Promise resolving to th restored keychain object
    */
   async createNewVaultAndRestore(password: string, seed: string) {
-    const preferences = this.context.PreferencesController as PreferencesController;
     const releaseLock = await this.mutex.acquire();
     try {
-      preferences.updateIdentities([]);
+      this.updateIdentities([]);
       const vault = await privates.get(this).keyring.createNewVaultAndRestore(password, seed);
-      preferences.updateIdentities(await privates.get(this).keyring.getAccounts());
-      preferences.update({ selectedAddress: Object.keys(preferences.state.identities)[0] });
+      this.updateIdentities(await privates.get(this).keyring.getAccounts());
       this.fullUpdate();
       return vault;
     } finally {
@@ -196,12 +207,10 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @returns - Newly-created keychain object
    */
   async createNewVaultAndKeychain(password: string) {
-    const preferences = this.context.PreferencesController as PreferencesController;
     const releaseLock = await this.mutex.acquire();
     try {
       const vault = await privates.get(this).keyring.createNewVaultAndKeychain(password);
-      preferences.updateIdentities(await privates.get(this).keyring.getAccounts());
-      preferences.update({ selectedAddress: Object.keys(preferences.state.identities)[0] });
+      this.updateIdentities(await privates.get(this).keyring.getAccounts());
       this.fullUpdate();
       return vault;
     } finally {
@@ -263,7 +272,6 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    */
   async importAccountWithStrategy(strategy: string, args: any[]): Promise<KeyringMemState> {
     let privateKey;
-    const preferences = this.context.PreferencesController as PreferencesController;
     switch (strategy) {
       case 'privateKey':
         const [importedKey] = args;
@@ -290,8 +298,8 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
     const newKeyring = await privates.get(this).keyring.addNewKeyring(KeyringTypes.simple, [privateKey]);
     const accounts = await newKeyring.getAccounts();
     const allAccounts = await privates.get(this).keyring.getAccounts();
-    preferences.updateIdentities(allAccounts);
-    preferences.update({ selectedAddress: accounts[0] });
+    this.updateIdentities(allAccounts);
+    this.updateSelectedAddress(accounts[0]);
     return this.fullUpdate();
   }
 
@@ -302,8 +310,7 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @returns - Promise resolving current state when this account removal completes
    */
   async removeAccount(address: string): Promise<KeyringMemState> {
-    const preferences = this.context.PreferencesController as PreferencesController;
-    preferences.removeIdentity(address);
+    this.removeIdentity(address);
     await privates.get(this).keyring.removeAccount(address);
     return this.fullUpdate();
   }
@@ -384,10 +391,9 @@ export class KeyringController extends BaseController<KeyringConfig, KeyringStat
    * @returns - Promise resolving to the current state
    */
   async submitPassword(password: string): Promise<KeyringMemState> {
-    const preferences = this.context.PreferencesController as PreferencesController;
     await privates.get(this).keyring.submitPassword(password);
     const accounts = await privates.get(this).keyring.getAccounts();
-    await preferences.syncIdentities(accounts);
+    await this.syncIdentities(accounts);
     return this.fullUpdate();
   }
 

@@ -1,5 +1,3 @@
-import { ChildControllerContext } from './ComposableController';
-
 /**
  * State change callbacks
  */
@@ -32,13 +30,6 @@ export interface BaseState {
  */
 export class BaseController<C extends BaseConfig, S extends BaseState> {
   /**
-   * Map of all sibling child controllers keyed by name if this
-   * controller is composed using a ComposableController, allowing
-   * any API on any sibling controller to be accessed
-   */
-  context: ChildControllerContext = {};
-
-  /**
    * Default options used to configure this controller
    */
   defaultConfig: C = {} as C;
@@ -57,11 +48,6 @@ export class BaseController<C extends BaseConfig, S extends BaseState> {
    * Name of this controller used during composition
    */
   name = 'BaseController';
-
-  /**
-   * List of required sibling controllers this controller needs to function
-   */
-  requiredControllers: string[] = [];
 
   private readonly initialConfig: C;
 
@@ -155,18 +141,6 @@ export class BaseController<C extends BaseConfig, S extends BaseState> {
     }
     this.internalListeners.forEach((listener) => {
       listener(this.internalState);
-    });
-  }
-
-  /**
-   * Extension point called if and when this controller is composed
-   * with other controllers using a ComposableController
-   */
-  onComposed() {
-    this.requiredControllers.forEach((name) => {
-      if (!this.context[name]) {
-        throw new Error(`${this.name} must be composed with ${name}.`);
-      }
     });
   }
 

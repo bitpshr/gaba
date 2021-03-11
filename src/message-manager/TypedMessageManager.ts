@@ -80,11 +80,6 @@ export class TypedMessageManager extends AbstractMessageManager<
   name = 'TypedMessageManager';
 
   /**
-   * List of required sibling controllers this controller needs to function
-   */
-  requiredControllers = ['NetworkController'];
-
-  /**
    * Creates a new TypedMessage with an 'unapproved' status using the passed messageParams.
    * this.addMessage is called to add the new TypedMessage to this.messages, and to save the unapproved TypedMessages.
    *

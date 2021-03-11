@@ -8,7 +8,6 @@ export * from './assets/AssetsContractController';
 export * from './assets/AssetsController';
 export * from './assets/AssetsDetectionController';
 export * from './BaseController';
-export * from './ComposableController';
 export * from './assets/CurrencyRateController';
 export * from './keyring/KeyringController';
 export * from './message-manager/MessageManager';

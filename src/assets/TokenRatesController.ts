@@ -1,8 +1,9 @@
 import { toChecksumAddress } from 'ethereumjs-util';
 import BaseController, { BaseConfig, BaseState } from '../BaseController';
 import { safelyExecute, handleFetch } from '../util';
-import AssetsController from './AssetsController';
-import CurrencyRateController from './CurrencyRateController';
+
+import type { AssetsState } from './AssetsController';
+import type { CurrencyRateState } from './CurrencyRateController';
 
 /**
  * @type CoinGeckoResponse
@@ -78,17 +79,17 @@ export class TokenRatesController extends BaseController<TokenRatesConfig, Token
   name = 'TokenRatesController';
 
   /**
-   * List of required sibling controllers this controller needs to function
-   */
-  requiredControllers = ['AssetsController', 'CurrencyRateController'];
-
-  /**
    * Creates a TokenRatesController instance
    *
    * @param config - Initial options used to configure this controller
    * @param state - Initial state to set on this controller
    */
-  constructor(config?: Partial<TokenRatesConfig>, state?: Partial<TokenRatesState>) {
+  constructor(
+    onAssetStateChange: (listener: (tokenState: AssetsState) => void) => void,
+    onCurrencyRateStateChange: (listener: (tokenState: CurrencyRateState) => void) => void,
+    config?: Partial<TokenRatesConfig>,
+    state?: Partial<TokenRatesState>,
+  ) {
     super(config, state);
     this.defaultConfig = {
       disabled: true,
@@ -99,6 +100,12 @@ export class TokenRatesController extends BaseController<TokenRatesConfig, Token
     this.defaultState = { contractExchangeRates: {} };
     this.initialize();
     this.configure({ disabled: false }, false, false);
+    onAssetStateChange((assetsState) => {
+      this.configure({ tokens: assetsState.tokens });
+    });
+    onCurrencyRateStateChange((currencyRateState) => {
+      this.configure({ nativeCurrency: currencyRateState.nativeCurrency });
+    });
     this.poll();
   }
 
@@ -134,22 +141,6 @@ export class TokenRatesController extends BaseController<TokenRatesConfig, Token
    */
   async fetchExchangeRate(query: string): Promise<CoinGeckoResponse> {
     return handleFetch(this.getPricingURL(query));
-  }
-
-  /**
-   * Extension point called if and when this controller is composed
-   * with other controllers using a ComposableController
-   */
-  onComposed() {
-    super.onComposed();
-    const assets = this.context.AssetsController as AssetsController;
-    const currencyRate = this.context.CurrencyRateController as CurrencyRateController;
-    assets.subscribe(() => {
-      this.configure({ tokens: assets.state.tokens });
-    });
-    currencyRate.subscribe(() => {
-      this.configure({ nativeCurrency: currencyRate.state.nativeCurrency });
-    });
   }
 
   /**
